@@ -1,0 +1,254 @@
+import React, { useState, useRef } from 'react';
+import { Language, MatrixSelection } from '../types';
+import { CAMERA_OPTIONS } from '../data/presetData';
+import { Sparkles, ChevronLeft, ChevronRight, Check, ChevronDown, Camera } from 'lucide-react';
+
+interface CameraSelectionCarouselProps {
+  language: Language;
+  selection: MatrixSelection;
+  onUpdateSelection: (updates: Partial<MatrixSelection>) => void;
+}
+
+const CAMERA_CATEGORIES = [
+  { id: 'all', labelMm: 'အကုန်လုံး (၂၀ မျိုး)', labelEn: 'All Lenses & Bodies (20)' },
+  { id: 'portrait_prime', labelMm: '📸 ပို့ထရိတ်နှင့် ပရိုလန်းစ် (၆ မျိုး)', labelEn: 'Portrait & Prime Lenses' },
+  { id: 'tele_wide_cinema', labelMm: '🏔️ မြင်ကွင်းကျယ်နှင့် စီနီမာလန်းစ် (၅ မျိုး)', labelEn: 'Wide, Zoom & Cinema Lenses' },
+  { id: 'vintage_special', labelMm: '🎞️ ရှေးဟောင်းနှင့် အနုပညာလန်းစ် (၂ မျိုး)', labelEn: 'Vintage & Special Lenses' },
+  { id: 'pro_bodies', labelMm: '📷 ပရော်ဖက်ရှင်နယ် ကင်မရာများ (၇ မျိုး)', labelEn: 'Pro Flagship Bodies' },
+];
+
+export const CameraSelectionCarousel: React.FC<CameraSelectionCarouselProps> = ({
+  language,
+  selection,
+  onUpdateSelection,
+}) => {
+  const isMyanmar = language === 'my';
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const currentCamId = selection.camera || 'default_photo';
+  const currentCamObj = CAMERA_OPTIONS.find((c) => c.id === currentCamId) || CAMERA_OPTIONS[1];
+
+  // Helper to categorize options
+  const getCategory = (id: string) => {
+    if (['lens_85mm_portrait', 'lens_100mm_macro', 'lens_35mm_wide', 'lens_50mm_prime', 'lens_135mm_telephoto', 'lens_50mm_ultrafast'].includes(id)) {
+      return 'portrait_prime';
+    }
+    if (['lens_200mm_super_telephoto', 'lens_24mm_ultrawide', 'lens_40mm_anamorphic', 'lens_70_200mm_zoom', 'lens_tilt_shift_45mm'].includes(id)) {
+      return 'tele_wide_cinema';
+    }
+    if (['lens_vintage_helios_85mm', 'lens_soft_focus_90mm'].includes(id)) {
+      return 'vintage_special';
+    }
+    return 'pro_bodies'; // hasselblad, leica, canon, sony, fujifilm, nikon, iphone
+  };
+
+  // Filter options
+  const filteredOptions = CAMERA_OPTIONS.filter((c) => {
+    if (c.id === 'skip') return false; // Shown in header skip button
+    if (selectedCategory === 'all') return true;
+    return getCategory(c.id) === selectedCategory;
+  });
+
+  // Scroll handler
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -280 : 280;
+      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="space-y-3.5 rounded-2xl bg-slate-950/90 border border-cyan-800/80 p-4 backdrop-blur-md shadow-xl">
+      
+      {/* Header Row */}
+      <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-cyan-900/50">
+        <label className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+          <Camera className="h-4 w-4 text-cyan-400" />
+          <span>
+            {isMyanmar
+              ? `ကင်မရာနှင့် လန်းစ် ဆက်တင် (Camera & Lens Setup - ၂၀ မျိုး)`
+              : `Select Camera & Lens Setup (20 Options):`}
+          </span>
+        </label>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onUpdateSelection({ camera: 'skip' })}
+            className="text-[10px] bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-slate-700 transition-all flex items-center gap-1 shadow"
+          >
+            🚫 {isMyanmar ? 'မရွေးပါ (Auto)' : 'Skip / Auto'}
+          </button>
+
+          <span className="text-[11px] text-cyan-200 font-bold bg-cyan-950/90 px-2.5 py-1 rounded-lg border border-cyan-700/80 shadow max-w-[200px] truncate">
+            {currentCamObj.emoji || '📸'}{' '}
+            {isMyanmar ? (currentCamObj.labelMm || currentCamObj.label) : (currentCamObj.labelEn || currentCamObj.label)}
+          </span>
+        </div>
+      </div>
+
+      {/* Quick Category Filter Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-cyan-600/40">
+        {CAMERA_CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-2.5 py-1 text-[11px] whitespace-nowrap rounded-lg border transition-all ${
+              selectedCategory === cat.id
+                ? 'bg-cyan-950/90 border-cyan-400 text-cyan-200 font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+            }`}
+          >
+            {isMyanmar ? cat.labelMm : cat.labelEn}
+          </button>
+        ))}
+      </div>
+
+      {/* 🌟 HORIZONTAL SCROLLABLE CAROUSEL (ကင်မရာနှင့် လန်းစ်များ ဘေးတိုက် ဆွဲကြည့်ရန်) */}
+      <div className="space-y-1.5 bg-slate-900/60 border border-slate-800 rounded-xl p-2.5 relative">
+        <div className="flex items-center justify-between text-[11px] text-cyan-300 font-bold">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            <span>
+              {isMyanmar
+                ? `ကင်မရာနှင့် လန်းစ်များ ဘေးတိုက် ဆွဲကြည့်ပါ (↔):`
+                : `Camera & Lens Options (Scroll Horizontally ↔):`}
+            </span>
+            <span className="text-[10px] text-cyan-400/80 font-mono">
+              ({filteredOptions.length} Options)
+            </span>
+          </span>
+
+          {/* Left / Right Scroll Controls */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => handleScroll('left')}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-slate-700 transition-all shadow"
+              title="Scroll Left"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScroll('right')}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-slate-950 text-cyan-300 border border-slate-700 transition-all shadow"
+              title="Scroll Right"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Horizontal Strip */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-2 overflow-x-auto py-1 px-0.5 scrollbar-thin scrollbar-thumb-cyan-500/50 scrollbar-track-slate-950 snap-x snap-mandatory"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {filteredOptions.map((cam) => {
+            const isSelected = currentCamId === cam.id;
+            return (
+              <button
+                key={cam.id}
+                type="button"
+                onClick={() => onUpdateSelection({ camera: cam.id })}
+                className={`snap-start shrink-0 min-w-[200px] max-w-[250px] p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-1.5 group cursor-pointer ${
+                  isSelected
+                    ? 'bg-cyan-950/90 border-cyan-400 text-cyan-100 font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400/80'
+                    : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:border-cyan-500/60 hover:bg-slate-900/90'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <span className="text-2xl p-1 rounded-lg bg-slate-900/90 border border-slate-800 group-hover:scale-110 transition-transform">
+                    {cam.emoji || '📸'}
+                  </span>
+                  {isSelected ? (
+                    <span className="p-0.5 rounded-full bg-cyan-400 text-slate-950 shrink-0">
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                    </span>
+                  ) : (
+                    <span className="p-0.5 rounded-full border border-slate-700 text-slate-600 group-hover:border-cyan-400 group-hover:text-cyan-400 transition-colors">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold leading-tight line-clamp-2">
+                    {isMyanmar ? (cam.labelMm || cam.label) : (cam.labelEn || cam.label)}
+                  </p>
+                  {cam.lens && (
+                    <p className="text-[9px] text-cyan-300/80 font-mono mt-1 line-clamp-1">
+                      {cam.lens} ({cam.aperture})
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Fast Dropdown Menu Access */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between text-[11px] text-slate-400">
+          <span className="font-semibold text-slate-300">
+            {isMyanmar ? 'သို့မဟုတ် Dropdown မနူးမှ တိုက်ရိုက် ရွေးချယ်ရန်:' : 'Or Fast Select via Dropdown Menu:'}
+          </span>
+        </div>
+        <div className="relative">
+          <select
+            value={currentCamId}
+            onChange={(e) => onUpdateSelection({ camera: e.target.value })}
+            className="w-full rounded-xl bg-slate-900 border border-cyan-500/40 hover:border-cyan-400 px-3 py-2 text-xs font-semibold text-cyan-200 focus:outline-none appearance-none cursor-pointer pr-10 shadow-inner"
+          >
+            {CAMERA_CATEGORIES.filter((c) => c.id !== 'all').map((cat) => {
+              const catOptions = CAMERA_OPTIONS.filter((cam) => getCategory(cam.id) === cat.id && cam.id !== 'skip');
+              if (catOptions.length === 0) return null;
+
+              return (
+                <optgroup
+                  key={cat.id}
+                  label={isMyanmar ? cat.labelMm : cat.labelEn}
+                  className="bg-slate-950 text-cyan-400 font-bold"
+                >
+                  {catOptions.map((cam) => (
+                    <option
+                      key={cam.id}
+                      value={cam.id}
+                      className="bg-slate-900 text-slate-100 py-1"
+                    >
+                      {cam.emoji || '📸'} {isMyanmar ? (cam.labelMm || cam.label) : (cam.labelEn || cam.label)}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
+          </select>
+
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400">
+            <ChevronDown className="h-4 w-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Selected Lens & Aperture Info Callout */}
+      {currentCamId !== 'skip' && currentCamObj.lens && (
+        <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 flex items-center justify-between text-xs text-cyan-200/90 flex-wrap gap-1">
+          <span className="flex items-center gap-1.5">
+            <span>📸</span>
+            <span>{isMyanmar ? 'လန်းစ် (Lens Model):' : 'Lens Model:'}</span>
+            <strong className="text-cyan-300 font-semibold">{currentCamObj.lens}</strong>
+          </span>
+          <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded border border-cyan-800/60">
+            {isMyanmar ? 'အလင်းဝင်ပေါက် (Aperture):' : 'Aperture:'} {currentCamObj.aperture}
+          </span>
+        </div>
+      )}
+
+    </div>
+  );
+};

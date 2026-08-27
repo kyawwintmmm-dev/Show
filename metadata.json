@@ -1,0 +1,6 @@
+{
+  "name": "Show Ai Studio.",
+  "description": "AI-powered professional prompt engineering and image generation studio supporting Txt2Img, Img2Img, and Clothes Swap modes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
